@@ -2,14 +2,27 @@ import { ListGroup } from "react-bootstrap";
 import { MdDragIndicator } from "react-icons/md";
 import AssignmentControlButtons from "./AssignmentControlButtons";
 import { FaSearch } from "react-icons/fa";
+import { Link, useParams } from "react-router-dom";
+import { assignments } from "../../Database";
 
 export default function Assignments() {
+  const { cid } = useParams<{ cid: string }>();
+  const courseAssignments = assignments.filter((a) => a.course === cid);
+  const groupOrder = ["ASSIGNMENTS", "QUIZZES", "EXAMS", "PROJECT"];
+  const categories = groupOrder.map((grp) => ({
+    key: grp,
+    label: grp,
+    percent: 40,
+    items: courseAssignments.filter((a) => a.assignment_group === grp),
+    pathSegment: grp.charAt(0) + grp.slice(1).toLowerCase(),
+    listClass: grp === "ASSIGNMENTS" ? "wd-assignments" : "",
+    linkClass: `wd-${grp.toLowerCase()}-link`,
+  }));
+
   return (
     <div id="wd-assignments">
       <div className="mb-3">
-        <FaSearch
-            className="position-absolute text-secondary"
-          />
+        <FaSearch className="position-absolute text-secondary"/>
         <input
             placeholder="Search for Assignments"
             id="wd-search-assignment"
@@ -19,156 +32,56 @@ export default function Assignments() {
         <button id="wd-add-assignment-group" className="btn btn-secondary me-2">+ Group</button>
         <button id="wd-add-assignment" className="btn btn-danger">+ Assignment</button>
       </div>
+      
       <ListGroup className="rounded-0">
         
-        <ListGroup.Item className="wd-module p-0 mb-5 fs-5 border-gray">
-          <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
-            <MdDragIndicator className="me-2 fs-3" />
-            <span className="fw-bold flex-grow-1">ASSIGNMENTS 40% of Total</span>
-            <AssignmentControlButtons />
-          </div>
-          <ListGroup className="wd-assignments rounded-0">
-            <ListGroup.Item className="wd-assignment p-3 ps-1 d-flex align-items-center">
+        {categories.map((cat) => (
+          <ListGroup.Item
+            key={cat.key}
+            className="wd-module p-0 mb-5 fs-5 border-gray"
+          >
+            <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
               <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Assignments/123" className="wd-assignment-link">
-                  A1 - ENV + HTML
-                </a>
-                <br />
-                <h6>Multiple Modules | Not available | 0/10
-                  <br />
-                Due......</h6>
+              <span className="fw-bold flex-grow-1">
+                {cat.label} {cat.percent}% of Total
               </span>
               <AssignmentControlButtons />
-            </ListGroup.Item>
-            <ListGroup.Item className="wd-assignment p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Assignments/124" className="wd-assignment-link">
-                  A2 - Whatever it is
-                </a>
-                <br />
-                <h6>Multiple Modules | Not available | 0/10
-                  <br />
-                Due......</h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-          </ListGroup>
-        </ListGroup.Item>
+            </div>
 
-        <ListGroup.Item className="wd-module p-0 mb-5 fs-5 border-gray">
-          <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
-            <MdDragIndicator className="me-2 fs-3" />
-            <span className="fw-bold flex-grow-1">QUIZ 40% of Total</span>
-            <AssignmentControlButtons />
-          </div>
-          <ListGroup className="wd-assignment rounded-0">
-            <ListGroup.Item className="wd-quiz p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Quiz/123" className="wd-quiz-link">
-                  Q1
-                </a>
-                <br />
-                <h6>Quiz | Not available | 0/10
-                  <br />
-                Due......
-                </h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-            <ListGroup.Item className="wd-quiz p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Quiz/124" className="wd-quiz-link">
-                  Q2
-                </a>
-                <br />
-                <h6>Quiz | Not available | 0/10
-                  <br />
-                Due......
-                </h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-          </ListGroup>
-        </ListGroup.Item>
+            <ListGroup className={`${cat.listClass} rounded-0`}>
+              {cat.items.map((item) => (
+                <ListGroup.Item
+                  key={item._id}
+                  className={`p-3 ps-1 d-flex align-items-center wd-${cat.key.toLowerCase()}`}
+                >
+                  <MdDragIndicator className="me-2 fs-3" />
+                  <span className="flex-grow-1">
+                    <Link
+                      to={`/Kambaz/Courses/${cid}/${cat.pathSegment}/${item._id}`}
+                      className={cat.linkClass}
+                    >
+                      {item.title}
+                    </Link>
+                    <br />
+                    <h6>
+                      {/* You can replace the following stub with real data */}
+                      {item.description?.slice(0, 30)}… | {item.points}/100
+                      <br />
+                      Due {item.due_date}
+                    </h6>
+                  </span>
+                  <AssignmentControlButtons />
+                </ListGroup.Item>
+              ))}
 
-        <ListGroup.Item className="wd-module p-0 mb-5 fs-5 border-gray">
-          <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
-            <MdDragIndicator className="me-2 fs-3" />
-            <span className="fw-bold flex-grow-1">EXAMS 40% of Total</span>
-            <AssignmentControlButtons />
-          </div>
-          <ListGroup className="wd-assignment rounded-0">
-            <ListGroup.Item className="wd-exams p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Exams/123" className="wd-exam-link">
-                  E1
-                </a>
-                <br />
-                <h6>Exam | Not available | 0/10
-                  <br />
-                Due......</h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-            <ListGroup.Item className="wd-exams p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Exams/124" className="wd-exam-link">
-                  E2
-                </a>
-                <br />
-                <h6>Exam | Not available | 0/10
-                  <br />
-                Due......</h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-          </ListGroup>
-        </ListGroup.Item>
-
-        <ListGroup.Item className="wd-module p-0 mb-5 fs-5 border-gray">
-          <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
-            <MdDragIndicator className="me-2 fs-3" />
-            <span className="fw-bold flex-grow-1">PROJECTS 40% of Total</span>
-            <AssignmentControlButtons />
-          </div>
-          <ListGroup className="wd-assignment rounded-0">
-            <ListGroup.Item className="wd-exams p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Project/123" className="wd-project-link">
-                  P1
-                </a>
-                <br />
-                <h6>Project | Not available | 0/10
-                  <br />
-                Due......
-                </h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-            <ListGroup.Item className="wd-projects p-3 ps-1 d-flex align-items-center">
-              <MdDragIndicator className="me-2 fs-3" />
-              <span className="flex-grow-1">
-                <a href="#/Kambaz/Courses/1234/Project/124" className="wd-project-link">
-                  P2
-                </a>
-                <br />
-                <h6>Project | Not available | 0/10
-                  <br />
-                Due......
-                </h6>
-              </span>
-              <AssignmentControlButtons />
-            </ListGroup.Item>
-          </ListGroup>
-        </ListGroup.Item>
-
+              {cat.items.length === 0 && (
+                <ListGroup.Item className="text-center">
+                  No {cat.label.toLowerCase()} found.
+                </ListGroup.Item>
+              )}
+            </ListGroup>
+          </ListGroup.Item>
+        ))}
       </ListGroup>
     </div>
   );
