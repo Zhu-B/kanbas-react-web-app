@@ -1,19 +1,27 @@
-import { ListGroup } from "react-bootstrap";
+import { ListGroup, Modal, Button } from "react-bootstrap";
 import { MdDragIndicator } from "react-icons/md";
 import AssignmentControlButtons from "./AssignmentControlButtons";
 import { FaSearch } from "react-icons/fa";
-import { Link, useParams } from "react-router-dom";
-import { assignments } from "../../Database";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { deleteAssignment } from "./reducer";
+import { IoTrash } from "react-icons/io5";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Assignments() {
   const { cid } = useParams<{ cid: string }>();
-  const courseAssignments = assignments.filter((a) => a.course === cid);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const courseAssignments = useSelector((state: any) =>
+    state.assignmentsReducer.assignments.filter((a: any) => a.course === cid)
+  );
+  const [toDelete, setToDelete] = useState<string | null>(null);
   const groupOrder = ["ASSIGNMENTS", "QUIZZES", "EXAMS", "PROJECT"];
   const categories = groupOrder.map((grp) => ({
     key: grp,
     label: grp,
     percent: 40,
-    items: courseAssignments.filter((a) => a.assignment_group === grp),
+    items: courseAssignments.filter((a: any) => a.assignment_group === grp),
     pathSegment: grp.charAt(0) + grp.slice(1).toLowerCase(),
     listClass: grp === "ASSIGNMENTS" ? "wd-assignments" : "",
     linkClass: `wd-${grp.toLowerCase()}-link`,
@@ -30,16 +38,18 @@ export default function Assignments() {
             style={{ width: 250 }}/>
           
         <button id="wd-add-assignment-group" className="btn btn-secondary me-2">+ Group</button>
-        <button id="wd-add-assignment" className="btn btn-danger">+ Assignment</button>
+        <button
+          id="wd-add-assignment"
+          className="btn btn-danger"
+          onClick={() => navigate(`/Kambaz/Courses/${cid}/Assignments/new`)}
+        >
+          + Assignment
+        </button>
       </div>
-      
+
       <ListGroup className="rounded-0">
-        
         {categories.map((cat) => (
-          <ListGroup.Item
-            key={cat.key}
-            className="wd-module p-0 mb-5 fs-5 border-gray"
-          >
+          <ListGroup.Item key={cat.key} className="wd-module p-0 mb-5 fs-5 border-gray">
             <div className="wd-title p-3 ps-2 bg-secondary d-flex align-items-center">
               <MdDragIndicator className="me-2 fs-3" />
               <span className="fw-bold flex-grow-1">
@@ -49,7 +59,7 @@ export default function Assignments() {
             </div>
 
             <ListGroup className={`${cat.listClass} rounded-0`}>
-              {cat.items.map((item) => (
+              {cat.items.map((item: any) => (
                 <ListGroup.Item
                   key={item._id}
                   className={`p-3 ps-1 d-flex align-items-center wd-${cat.key.toLowerCase()}`}
@@ -64,13 +74,17 @@ export default function Assignments() {
                     </Link>
                     <br />
                     <h6>
-                      {/* You can replace the following stub with real data */}
                       {item.description?.slice(0, 30)}… | {item.points}/100
                       <br />
                       Due {item.due_date}
                     </h6>
                   </span>
                   <AssignmentControlButtons />
+                  <IoTrash
+                    className="fs-4 text-danger ms-2"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setToDelete(item._id)}
+                  />
                 </ListGroup.Item>
               ))}
 
@@ -83,6 +97,29 @@ export default function Assignments() {
           </ListGroup.Item>
         ))}
       </ListGroup>
+
+      <Modal show={!!toDelete} onHide={() => setToDelete(null)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Assignment?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to remove this assignment?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setToDelete(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              dispatch(deleteAssignment(toDelete!));
+              setToDelete(null);
+            }}
+          >
+            Yes, Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
