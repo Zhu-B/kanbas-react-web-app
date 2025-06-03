@@ -95,7 +95,6 @@ export default function Dashboard() {
           {courses.map((c: Course) => (
             <Col key={c._id} style={{ width: 300 }}>
               <Card>
-                {/* Only this Link wraps the image and course info */}
                 <Link
                   to={`/Kambaz/Courses/${c._id}/Home`}
                   className="text-decoration-none text-dark"
