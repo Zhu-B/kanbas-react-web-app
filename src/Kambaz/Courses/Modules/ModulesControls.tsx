@@ -10,6 +10,10 @@ export default function ModulesControls(
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+  const handleAdd = async () => {
+    await addModule();
+    handleClose();
+  };
   return (
    <div id="wd-modules-controls" className="text-nowrap">
      <Button variant="danger" onClick={handleShow} size="lg" className="me-1 float-end" id="wd-add-module-btn">
@@ -45,6 +49,6 @@ export default function ModulesControls(
       Collapse All
     </Button>
     <ModuleEditor show={show} handleClose={handleClose} dialogTitle="Add Module"
-      moduleName={moduleName} setModuleName={setModuleName} addModule={addModule} />
+      moduleName={moduleName} setModuleName={setModuleName} addModule={handleAdd} />
    </div>
 );}

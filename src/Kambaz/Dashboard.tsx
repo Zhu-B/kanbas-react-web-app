@@ -1,22 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, Col, FormControl, Row } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import type { Course } from "./Courses/reducer";
-import { addCourse, updateCourse, deleteCourse } from "./Courses/reducer";
 import { enrollCourse, unenrollCourse } from "./Enrollments/reducer";
+import * as userClient from "./Account/client";
+import * as courseClient from "./Courses/client";
 
 export default function Dashboard() {
   const dispatch = useDispatch();
-  const courses = useSelector((s: any) => s.coursesReducer.courses);
-  const { currentUser } = useSelector((s: any) => s.accountReducer);
-  const enrollments = useSelector((s: any) =>
-    s.enrollmentsReducer.enrollments.filter(
-      (e: any) => e.user === currentUser._id
-    )
-  );
-  const enrolledIds = enrollments.map((e: any) => e.course);
-
+  const [courses, setCourses] = useState<any[]>([]);
+  const enrolledIds = courses.map((e: any) => e.course);
+  const { currentUser } = useSelector((state: any) => state.accountReducer);
+  const fetchCourses = async () => {
+    try {
+      const courses = await userClient.findMyCourses();
+      setCourses(courses);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  useEffect(() => {
+    fetchCourses();
+  }, [currentUser]);
+  
   if (currentUser.role === "FACULTY") {
     const [form, setForm] = useState<Omit<Course, "_id">>({
       name: "",
@@ -29,16 +36,33 @@ export default function Dashboard() {
 
     const navigate = useNavigate();
 
-    const handleAdd = () => {
-      dispatch(addCourse(form));
-      setForm({ name: "", number: "", startDate: "", endDate: "", description: "" });
+    const addNewCourse = async () => {
+      const newCourse = await userClient.createCourse(form);
+      setCourses([...courses, newCourse]);
     };
-    const handleUpdate = () => {
+
+    const deleteCourse = async (courseId: string) => {
+      await courseClient.deleteCourse(courseId);
+      setCourses(courses.filter((course) => course._id !== courseId));
+    };
+
+    const updateCourse = async () => {
       if (!editingId) return;
-      dispatch(updateCourse({ _id: editingId, ...form }));
+
+      const updated = await courseClient.updateCourse({ _id: editingId, ...form });
+
+      setCourses(courses.map(c => c._id === editingId ? updated : c));
+
       setEditingId(null);
-      setForm({ name: "", number: "", startDate: "", endDate: "", description: "" });
+      setForm({
+        name: "",
+        number: "",
+        startDate: "",
+        endDate: "",
+        description: "",
+      });
     };
+
     const startEdit = (c: Course) => {
       setEditingId(c._id);
       setForm({
@@ -59,7 +83,7 @@ export default function Dashboard() {
           <Button
             id="wd-add-new-course-click"
             className="float-end"
-            onClick={handleAdd}
+            onClick={addNewCourse}
           >
             Add
           </Button>
@@ -68,7 +92,7 @@ export default function Dashboard() {
             variant="warning"
             disabled={!editingId}
             className="float-end me-2"
-            onClick={handleUpdate}
+            onClick={updateCourse}
           >
             Update
           </Button>
@@ -137,10 +161,10 @@ export default function Dashboard() {
                     </Button>
                     <Button
                       variant="danger"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        dispatch(deleteCourse(c._id));
+                        await deleteCourse(c._id);
                       }}
                     >
                       Delete
