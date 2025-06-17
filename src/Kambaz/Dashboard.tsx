@@ -1,25 +1,60 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Col, FormControl, Row } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import type { Course } from "./Courses/reducer";
-import { enrollCourse, unenrollCourse } from "./Enrollments/reducer";
+//import { enrollCourse, unenrollCourse } from "./Enrollments/reducer";
 import * as userClient from "./Account/client";
 import * as courseClient from "./Courses/client";
 
 export default function Dashboard() {
-  const dispatch = useDispatch();
   const [courses, setCourses] = useState<any[]>([]);
-  const enrolledIds = courses.map((e: any) => e.course);
+  const [enrolling] = useState<boolean>(false);
+  const enrolledIds = courses.filter((c: any) => c.enrolled)
+  .map((c: any) => c._id);
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const fetchCourses = async () => {
     try {
-      const courses = await userClient.findMyCourses();
+      const allCourses = await courseClient.fetchAllCourses();
+      const enrolledCourses = await userClient.findCoursesForUser(
+        currentUser._id
+      );
+      const courses = allCourses.map((course: any) => {
+        if (enrolledCourses.find((c: any) => c._id === course._id)) {
+          return { ...course, enrolled: true };
+        } else {
+          return course;
+        }
+      });
       setCourses(courses);
     } catch (error) {
       console.error(error);
     }
   };
+  const updateEnrollment = async (courseId: string, enrolled: boolean) => {
+    if (enrolled) {
+      await userClient.enrollIntoCourse(currentUser._id, courseId);
+    } else {
+      await userClient.unenrollFromCourse(currentUser._id, courseId);
+    }
+    setCourses(
+      courses.map((course) => {
+        if (course._id === courseId) {
+          return { ...course, enrolled: enrolled };
+        } else {
+          return course;
+        }
+      })
+    );
+  };
+  // const findCoursesForUser = async () => {
+  //   try {
+  //     const courses = await userClient.findCoursesForUser(currentUser._id);
+  //     setCourses(courses);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
   useEffect(() => {
     fetchCourses();
   }, [currentUser]);
@@ -37,12 +72,13 @@ export default function Dashboard() {
     const navigate = useNavigate();
 
     const addNewCourse = async () => {
-      const newCourse = await userClient.createCourse(form);
+      const newCourse = await courseClient.createCourse(form);
       setCourses([...courses, newCourse]);
     };
 
     const deleteCourse = async (courseId: string) => {
       await courseClient.deleteCourse(courseId);
+      await userClient.unenrollFromCourse(currentUser._id, courseId);
       setCourses(courses.filter((course) => course._id !== courseId));
     };
 
@@ -218,19 +254,8 @@ export default function Dashboard() {
                   <Button
                     size="sm"
                     variant={enrolled ? "danger" : "success"}
-                    onClick={() =>
-                      dispatch(
-                        enrolled
-                          ? unenrollCourse({
-                              user: currentUser._id,
-                              course: c._id,
-                            })
-                          : enrollCourse({
-                              user: currentUser._id,
-                              course: c._id,
-                            })
-                      )
-                    }
+                    disabled={enrolling}
+                    onClick={() => updateEnrollment(c._id, !enrolled)}
                   >
                     {enrolled ? "Unenroll" : "Enroll"}
                   </Button>
