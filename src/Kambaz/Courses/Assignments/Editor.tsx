@@ -1,16 +1,20 @@
 import { Form, Button, Container } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { assignments } from '../../Database';
-import { useDispatch } from "react-redux";
+//import { assignments } from '../../Database';
+import { useDispatch, useSelector } from "react-redux";
 import { addAssignment, updateAssignment } from "./reducer";
 import { useState } from "react";
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams<{ cid: string; aid: string }>();
   const isNew = aid === "new";
-  const existing = assignments.find((a) => a._id === aid);
+  //const existing = assignments.find((a) => a._id === aid);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const existing = useSelector((s: any) =>
+    s.assignmentsReducer.assignments.find((a: any) => a._id === aid)
+  );
 
   const [title, setTitle] = useState(existing?.title || "");
   const [description, setDescription] = useState(

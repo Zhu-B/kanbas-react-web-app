@@ -1,32 +1,65 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Col, FormControl, Row } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { Course } from "./Courses/reducer";
+import { useSelector, useDispatch } from "react-redux";
+import Course from "./Courses/reducer";
 //import { enrollCourse, unenrollCourse } from "./Enrollments/reducer";
 import * as userClient from "./Account/client";
 import * as courseClient from "./Courses/client";
+import {
+  setCourses as setCoursesAction,
+  addCourse as addCourseAction,
+  deleteCourse as deleteCourseAction,
+  updateCourse as updateCourseAction,
+  editCourse as editCourseAction,
+} from "./Courses/reducer";
+
+type Course = {
+  _id: string;
+  name: string;
+  number: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  enrolled?: boolean;
+  editing?: boolean;
+  modules?: any[];
+};
 
 export default function Dashboard() {
-  const [courses, setCourses] = useState<any[]>([]);
+  //const [courses, setCourses] = useState<any[]>([]);
+  const dispatch = useDispatch();
+  const courses = useSelector((state: any) => state.coursesReducer.courses);
+
   const [enrolling] = useState<boolean>(false);
-  const enrolledIds = courses.filter((c: any) => c.enrolled)
-  .map((c: any) => c._id);
+  const enrolledIds = courses.filter((c: Course) => c.enrolled).map((c: Course) => c._id);
   const { currentUser } = useSelector((state: any) => state.accountReducer);
+
   const fetchCourses = async () => {
+    // try {
+    //   const allCourses = await courseClient.fetchAllCourses();
+    //   const enrolledCourses = await userClient.findCoursesForUser(
+    //     currentUser._id
+    //   );
+    //   const courses = allCourses.map((course: any) => {
+    //     if (enrolledCourses.find((c: any) => c._id === course._id)) {
+    //       return { ...course, enrolled: true };
+    //     } else {
+    //       return course;
+    //     }
+    //   });
     try {
-      const allCourses = await courseClient.fetchAllCourses();
-      const enrolledCourses = await userClient.findCoursesForUser(
-        currentUser._id
-      );
-      const courses = allCourses.map((course: any) => {
-        if (enrolledCourses.find((c: any) => c._id === course._id)) {
-          return { ...course, enrolled: true };
-        } else {
-          return course;
-        }
-      });
-      setCourses(courses);
+       const allCourses = await courseClient.fetchAllCourses();
+       const enrolledCourses = await userClient.findCoursesForUser(
+         currentUser._id
+       );
+       const coursesWithEnrolled = allCourses.map((course: any) =>
+         enrolledCourses.find((c: any) => c._id === course._id)
+           ? { ...course, enrolled: true }
+           : course
+       );
+      //setCourses(courses);
+      dispatch(setCoursesAction(coursesWithEnrolled));
     } catch (error) {
       console.error(error);
     }
@@ -37,15 +70,19 @@ export default function Dashboard() {
     } else {
       await userClient.unenrollFromCourse(currentUser._id, courseId);
     }
-    setCourses(
-      courses.map((course) => {
-        if (course._id === courseId) {
-          return { ...course, enrolled: enrolled };
-        } else {
-          return course;
-        }
-      })
-    );
+    // setCourses(
+    //   courses.map((course) => {
+    //     if (course._id === courseId) {
+    //       return { ...course, enrolled: enrolled };
+    //     } else {
+    //       return course;
+    //     }
+    //   })
+    // );
+    const updated = courses.map((c: any) =>
+       c._id === courseId ? { ...c, enrolled } : c
+     );
+     dispatch(setCoursesAction(updated));
   };
   // const findCoursesForUser = async () => {
   //   try {
@@ -72,14 +109,16 @@ export default function Dashboard() {
     const navigate = useNavigate();
 
     const addNewCourse = async () => {
-      const newCourse = await courseClient.createCourse(form);
-      setCourses([...courses, newCourse]);
+      await courseClient.createCourse(form);
+      //setCourses([...courses, newCourse]);
+      dispatch(addCourseAction(form));
     };
 
     const deleteCourse = async (courseId: string) => {
       await courseClient.deleteCourse(courseId);
       await userClient.unenrollFromCourse(currentUser._id, courseId);
-      setCourses(courses.filter((course) => course._id !== courseId));
+      //setCourses(courses.filter((course) => course._id !== courseId));
+      dispatch(deleteCourseAction(courseId));
     };
 
     const updateCourse = async () => {
@@ -87,7 +126,8 @@ export default function Dashboard() {
 
       const updated = await courseClient.updateCourse({ _id: editingId, ...form });
 
-      setCourses(courses.map(c => c._id === editingId ? updated : c));
+      //setCourses(courses.map(c => c._id === editingId ? updated : c));
+      dispatch(updateCourseAction(updated));
 
       setEditingId(null);
       setForm({
@@ -101,6 +141,7 @@ export default function Dashboard() {
 
     const startEdit = (c: Course) => {
       setEditingId(c._id);
+      dispatch(editCourseAction(c._id));
       setForm({
         name: c.name,
         number: c.number,

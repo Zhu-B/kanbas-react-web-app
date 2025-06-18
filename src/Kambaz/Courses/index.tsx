@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useParams, useLocation, Navigate, Route, Routes } from "react-router";
+import { useParams, useLocation, Navigate, Route, Routes } from "react-router-dom";
 import CourseNavigation from "./Navigation";
 import Home from "./Home";
 import Modules from "./Modules";
@@ -7,7 +7,19 @@ import Assignments from "./Assignments";
 import AssignmentEditor from "./Assignments/Editor";
 import PeopleTable from "./People/Table";
 import { FaAlignJustify } from "react-icons/fa";
-import type { Course } from "./reducer";
+//import type { Course } from "./reducer";
+
+type Course = {
+  _id: string;
+  name: string;
+  number: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  enrolled?: boolean;
+  editing?: boolean;
+  modules?: any[];
+};
 
 export default function Courses() {
   const { cid } = useParams<{ cid: string }>();

@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import enrollmentsData from "../Database/enrollments.json";
+//import enrollmentsData from "../Database/enrollments.json";
 import { v4 as uuidv4 } from "uuid";
 
 export interface Enrollment {
@@ -14,7 +14,7 @@ interface EnrollmentsState {
 }
 
 const initialState: EnrollmentsState = {
-  enrollments: enrollmentsData as Enrollment[],
+  enrollments: [],
 };
 
 const enrollmentsSlice = createSlice({
@@ -26,7 +26,6 @@ const enrollmentsSlice = createSlice({
       action: PayloadAction<{ user: string; course: string }>
     ) => {
       const { user, course } = action.payload;
-      // avoid dup
       if (
         !state.enrollments.find(
           (e) => e.user === user && e.course === course
